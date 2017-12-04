@@ -1,9 +1,7 @@
 install.packages("RMySQL")
 library(RMySQL)
 db=dbConnect(RMySQL::MySQL(), host='127.0.0.1', user='root',password='',dbname='xhamster')
-q='use xhamster'
 bp=read.csv("Desktop/SQL/xhamster.csv")
-res=dbGetQuery(db,q) 
 tablecreation='create table data(id int(20), upload_date date(), title char(200), channels char(200), description char (100, nb_views int(20), nb_votes int(20), nb_comments int(5), runtime int(10), uploader char(30))'
 bp$id=as.numeric(bp$id)
 bp$upload_date=as.character.Date(bp$upload_date)
@@ -81,6 +79,7 @@ plot(res5$`count(*)`)
 
 ### Checking to see how the number of interactions on a video 
 #relates to the video length and the type of description
+
 #length preference (views) by channel
 lenprefq='select d.channels,
   avg(nb_views)/avg(runtime/60) as length_preference
@@ -91,7 +90,7 @@ lenprefq='select d.channels,
 res6=dbGetQuery(db,lenprefq)
 plot(res6$length_preference)
 
-#comment preference (views) by channel
+#comment preference (views) by channel, sorted by comment preference
 comprefq='select d.channels,
   avg(nb_comments)/avg(runtime/60) as comm_preference
   from data as d
@@ -101,7 +100,18 @@ comprefq='select d.channels,
 res11=dbGetQuery(db,comprefq)
 plot(res11$comm_preference)
 
-#vote preference (views) by channel
+#comment preference per channel, sorted by length preference per channel 
+comprefq2='select d.channels,
+  avg(nb_comments)/avg(runtime/60) as comm_preference
+  from data as d
+  inner join categories on d.channels like categories.channels
+  group by d.channels
+  order by avg(nb_views)/avg(runtime/60) desc;'
+res12=dbGetQuery(db,comprefq)
+channels <- 1:94
+scatterplot(channels, res12$comm_preference)
+
+#vote preference (views) by channel, sorted by vote preference per channel
 voteprefq='select d.channels,
   avg(nb_votes)/avg(runtime/60) as vote_preference
   from data as d
@@ -110,6 +120,16 @@ voteprefq='select d.channels,
   order by vote_preference desc;'
 res12=dbGetQuery(db,voteprefq)
 plot(res12$vote_preference)
+
+#vote preference (views) by channel, sorted by length preference per channel
+voteprefq2='select d.channels,
+  avg(nb_votes)/avg(runtime/60) as vote_preference
+  from data as d
+  inner join categories on d.channels like categories.channels
+  group by d.channels
+  order by avg(nb_views)/avg(runtime/60) desc;'
+res13=dbGetQuery(db,voteprefq2)
+scatterplot(channels,res13$vote_preference)
 
 ####################################
 
@@ -139,7 +159,7 @@ dayofyearq="select dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) as day_of_yea
   group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
   order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
 res9=dbGetQuery(db,dayofyearq)
-plot(res9$day_of_year,res9$`count(*)`)
+scatterplot(res9$day_of_year,res9$`count(*)`)
 
 #avg runtime by day of year
 runtimedayofyearq="select dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) as day_of_year, avg(runtime) from data
@@ -148,3 +168,39 @@ runtimedayofyearq="select dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) as day
   order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
 res10=dbGetQuery(db,runtimedayofyearq)
 plot(res10$day_of_year,res10$`avg(runtime)`)
+
+##Checking to see if videos uploaded on christmas have more tags related to christmas
+descriptionq="select dayofyear(str_to_date(upload_date, '%Y-%d-%m')), count(*) from data
+where description like '%christmas%' OR description like '%santa%' OR description like '%elf%' or description like '%jesus%' or description like '%holy%'
+group by dayofyear(str_to_date(upload_date, '%Y-%d-%m'));"
+res15=dbGetQuery(db,descriptionq)
+scatterplot(res15$`dayofyear(str_to_date(upload_date, '%Y-%d-%m'))`, res15$`count(*)`)
+
+#videos posted about mothers go down around mother's day
+mothersdayq="select dayofyear(str_to_date(upload_date, '%Y-%d-%m')), count(*) from data
+where channels LIKE '%MILF%' OR description LIKE '%milf%' or description like '%mother%' or description like '%mom%' or description like '%mommy%'
+or description like '%mama%'
+group by dayofyear(str_to_date(upload_date, '%Y-%d-%m'));"
+res16=dbGetQuery(db,mothersdayq)
+scatterplot(res16$`dayofyear(str_to_date(upload_date, '%Y-%d-%m'))`, res16$`count(*)`)
+
+#do people upload more videos about celebrities around the time of awards shows???
+celebq="select dayofyear(str_to_date(upload_date, '%Y-%d-%m')), count(*) from data
+where channels LIKE '%moviestar%' OR description LIKE '%celeb%' or description like '%star%' or description like '%famous%'
+group by dayofyear(str_to_date(upload_date, '%Y-%d-%m'));"
+res18=dbGetQuery(db,celebq)
+scatterplot(res18$`dayofyear(str_to_date(upload_date, '%Y-%d-%m'))`, res18$`count(*)`)
+
+#do people upload more videos with halloween related tags around halloween?
+halloweenq="select month(str_to_date(upload_date, '%Y-%d-%m')), count(*) from data
+where description like '%vampire%' 
+OR description like '%dracula%' 
+OR description like '%blood%' 
+OR description like '%ghost%' 
+OR description like '%spooky%' 
+OR description like '%mummy%' 
+OR description like '%trick%or%treat%' 
+OR description like '%scary%'
+group by month(str_to_date(upload_date, '%Y-%d-%m'));"
+res19=dbGetQuery(db,halloweenq)
+scatterplot(res19$`month(str_to_date(upload_date, '%Y-%d-%m'))`, res19$`count(*)`)
