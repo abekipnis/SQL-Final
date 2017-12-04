@@ -1,3 +1,4 @@
+use xhamster;
 select * from data limit 10;
 select channels from data limit 10;
 select title, nb_views
@@ -35,7 +36,6 @@ select dayofyear(str_TO_DATE(upload_date,'%Y-%d-%m')) as day_of_year, count(*) f
 select upload_date from data limit 10;
 
 create table categories as select distinct channels from data where channels not like "%,%" order by channels;
-use xhamster;
 
 #channels with the most videos
 select data.channels, count(*)
@@ -45,12 +45,20 @@ select data.channels, count(*)
     order by count(*) desc;
 #note 4 of the top 5 channels are lgbt related
 
+#channels with the most views
 select d.channels, count(*), avg(nb_views)
 	from data as d
     inner join categories on d.channels like categories.channels
     group by d.channels
     order by avg(nb_views) desc;
 
+#channels with the longest videos
+#4 of the top 5 channels with the longest videos are related to ethnicity/race/country of origin
+select d.channels, count(*), avg(runtime/60) as avg_runtime
+	from data as d
+    inner join categories on d.channels like categories.channels
+    group by d.channels
+    order by avg(runtime/60) desc;
 
 select d.channels, count(*), avg(nb_views), 
 	avg(nb_comments), 
@@ -96,6 +104,37 @@ select d.uploader, count(*) as num, avg(nb_votes) as avg_votes,
 		order by count(*) desc
         limit 10;
 
+#look at specific days of the year
+select (case
+    when upload_date like '%-14-02' then 'Valentines_Day'
+    when upload_date like '%-25-12' then 'Christmas'
+    when upload_date like '%-01-01' then 'New Year\'s Day'
+    when upload_date like '%-31-12' then 'New Year\'s Eve'
+    when upload_date like '%-31-10' then 'Halloween'
+    when upload_date like '%-13-05' then 'Mother\'s Day'
+    when upload_date like '%-17-06' then 'Father\'s Day'
+    when upload_date like '%-4-07' then 'Fourth of July'
+    when upload_date like '%-3-17' then 'St Patricks\'s Day'
+    when upload_date like '%-11-11' then 'Veteran\'s Day'
+    end
+    ) as holiday, count(*),
+    avg(nb_views)as average_views,
+    sum(nb_views)as total_views,
+    avg(nb_votes) as average_votes,
+    avg(runtime)/60 as average_runtime
+    from data
+    group by holiday
+    order by total_views desc;
+
+select count(*), dayofyear(str_to_date(upload_date, '%Y-%d-%m')) as day_of_year
+    from data
+    group by day_of_year
+    order by count(*) desc;
+
+
 create user 'fab'@'129.133.222.31' identified by 'password';
+create user 'sam'@'129.133.206.10' identified by 'password';
 grant select on xhamster.data to 'fab'@'129.133.222.31';
 grant select on xhamster.categories to 'fab'@'129.133.222.31';
+grant select on xhamster.data to 'sam'@'129.133.206.10';
+grant select on xhamster.categories to 'sam'@'129.133.206.10';
