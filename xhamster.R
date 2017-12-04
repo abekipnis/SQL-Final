@@ -78,7 +78,10 @@ topchannelsq='select data.channels, count(*)
 res5=dbGetQuery(db,topchannelsq)
 plot(res5$`count(*)`)
 
-#length preference by channel
+
+### Checking to see how the number of interactions on a video 
+#relates to the video length and the type of description
+#length preference (views) by channel
 lenprefq='select d.channels,
   avg(nb_views)/avg(runtime/60) as length_preference
   from data as d
@@ -87,7 +90,28 @@ lenprefq='select d.channels,
   order by avg(nb_views)/avg(runtime/60) desc;'
 res6=dbGetQuery(db,lenprefq)
 plot(res6$length_preference)
-plot(res6$`avg(nb_comments)`)
+
+#comment preference (views) by channel
+comprefq='select d.channels,
+  avg(nb_comments)/avg(runtime/60) as comm_preference
+  from data as d
+  inner join categories on d.channels like categories.channels
+  group by d.channels
+  order by comm_preference desc;'
+res11=dbGetQuery(db,comprefq)
+plot(res11$comm_preference)
+
+#vote preference (views) by channel
+voteprefq='select d.channels,
+  avg(nb_votes)/avg(runtime/60) as vote_preference
+  from data as d
+  inner join categories on d.channels like categories.channels
+  group by d.channels
+  order by vote_preference desc;'
+res12=dbGetQuery(db,voteprefq)
+plot(res12$vote_preference)
+
+####################################
 
 #avg number of comments by channel
 commchannelq='select d.channels, avg(nb_comments) as avg_comments
@@ -107,18 +131,20 @@ viewchannelq='select d.channels, avg(nb_views) as avg_views
 res8=dbGetQuery(db,viewchannelq)
 plot(res8$avg_views)
 
+#############################
+
 #posts by day of year
 dayofyearq="select dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) as day_of_year, count(*) from data
 	where dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) is not NULL
-group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
-order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
+  group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
+  order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
 res9=dbGetQuery(db,dayofyearq)
 plot(res9$day_of_year,res9$`count(*)`)
 
 #avg runtime by day of year
 runtimedayofyearq="select dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) as day_of_year, avg(runtime) from data
 	where dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m')) is not NULL
-group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
-order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
+  group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
+  order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));"
 res10=dbGetQuery(db,runtimedayofyearq)
 plot(res10$day_of_year,res10$`avg(runtime)`)
