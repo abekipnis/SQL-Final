@@ -1,12 +1,13 @@
+#xhamster has 30 million unique visitors per day. porn is the most visited category of website on the internet
+#xhamster does not charge to post videos, but content owners with websites can generate revenue from advertisements
 use xhamster;
-select * from data limit 10;
-select channels from data limit 10;
+
+#creating table of individual categories
+create table categories as select distinct channels from data where channels not like "%,%" order by channels;
+
 select title, nb_views
 	from data
     where nb_views = (select max(nb_views) from data); #shows the most viewed video with title
-
-select * from data order by nb_views desc;#shows top 10 most viewed videos
-select * from data where channels like "%Amateur%" order by nb_views desc limit 10;
 
 #number of videos uploaded each year
 select year(upload_date), count(*), sum(nb_views), sum(nb_comments) from data 
@@ -25,7 +26,6 @@ select month(upload_date), count(*) from data
 	where month(upload_date) is not NULL 
     group by month(upload_date) 
     order by month(upload_date);
-select upload_date from data limit 10;
 
 #number of uploads by day of year
 select dayofyear(str_TO_DATE(upload_date,'%Y-%d-%m')) as day_of_year, count(*) from data
@@ -33,10 +33,6 @@ select dayofyear(str_TO_DATE(upload_date,'%Y-%d-%m')) as day_of_year, count(*) f
 	group by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'))
     order by dayofyear(str_TO_DATE(upload_date, '%Y-%d-%m'));
     
-select upload_date from data limit 10;
-
-create table categories as select distinct channels from data where channels not like "%,%" order by channels;
-
 #channels with the most videos
 select data.channels, count(*)
 	from data
@@ -60,6 +56,9 @@ select d.channels, count(*), avg(runtime/60) as avg_runtime
     group by d.channels
     order by avg(runtime/60) desc;
 
+    #^^^do people like short or long videos better?
+    #if this number is big, people like shorter videos better
+    #if this number is small, people like longer videos better
 select d.channels, count(*), avg(nb_views), 
 	avg(nb_comments), 
     avg(nb_comments/nb_views), 
@@ -69,12 +68,7 @@ select d.channels, count(*), avg(nb_views),
 	inner join categories on d.channels like categories.channels
     group by d.channels
     order by avg(nb_views)/avg(runtime/60) desc;
-    #^^^do people like short or long videos better?
-    #if this number is big, people like shorter videos better
-    #if this number is small, people like longer videos better
-    
-    #order by avg(nb_views) desc, avg(nb_comments) desc;#looking at avg number of views/comments per category
-    
+        
 #look at number of videos, avg runtime, uploaded per month
 select avg(runtime/60), month(upload_date), count(*) from data
 	group by month(upload_date)
@@ -126,12 +120,13 @@ select (case
     group by holiday
     order by total_views desc;
 
+#how many videos are uploaded per day of the year?
 select count(*), dayofyear(str_to_date(upload_date, '%Y-%d-%m')) as day_of_year
     from data
     group by day_of_year
     order by count(*) desc;
 
-
+#creating users and granting permissions...
 create user 'fab'@'129.133.222.31' identified by 'password';
 create user 'sam'@'129.133.206.10' identified by 'password';
 grant select on xhamster.data to 'fab'@'129.133.222.31';
